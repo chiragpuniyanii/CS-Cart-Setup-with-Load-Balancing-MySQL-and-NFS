@@ -1,21 +1,21 @@
-# CS-Cart High Availability Setup with NFS, Apache, and Load Balancer
-This repository contains the instructions and setup for deploying a CS-Cart application with two web servers, a MySQL server, and an NFS server. Additionally, we use a load balancer to distribute traffic between the two web servers.
+# CS-Cart Setup with Load Balancing, NFS, and Master-Master MySQL Replication
+This guide provides step-by-step instructions for setting up CS-Cart with a load balancer, NFS (Network File System) for shared storage, and Master-Master MySQL replication to ensure high availability and scalability.
 
 ## Overview
 This guide outlines how to set up a high-availability CS-Cart environment using:
 - 2 Apache-based Web Servers running CS-Cart.
 - A Shared File Storage Server using NFS.
-- A MySQL Database Server.
+- Two MySQL servers (SQL Server 1 and SQL Server 2) with public IPs.
 - A Load Balancer using Apache or HAProxy.
 
 The aim is to provide a scalable, fault-tolerant CS-Cart environment where both web servers share data and the load balancer distributes traffic.
 
 ## Prerequisites:
-- 4 servers:
+- 5 servers:
   - Web Server 1: Apache Web Server (IP: <web_server1_ip>)
   - Web Server 2: Apache Web Server (IP: <web_server2_ip>)
   - File Storage Server: NFS server (IP: <shared_storage_ip>)
-  - MySQL Server: MySQL database server (IP: <mysql_server_ip
+  - MySQL Server: Two MySQL servers (SQL Server 1 and SQL Server 2) with public IPs.
 - Load Balancer (Could be Apache or HAProxy)
 
 ## Step 1: Setting Up the File Storage Server (NFS)
@@ -132,7 +132,7 @@ df -h
 
   Repeat these steps for Web Server 2.
 
-## Step 3: Setting Up the MySQL Database Server
+## Step 3: Setting Up the Master-Master MySQL Replication Setup
 **Install MySQL Server**
 
   1) Install MySQL:
@@ -147,7 +147,7 @@ sudo systemctl enable mysql
 
   2) Allow Remote Connections
 
-  Edit the MySQL config file:
+  On both servers, update the MySQL configuration file:
 
 ```bash
 sudo nano /etc/mysql/mysql.conf.d/mysqld.cnf
@@ -166,7 +166,8 @@ sudo systemctl restart mysql
 ```
 
   4) Create MySQL User and Database for CS-Cart
-  
+  - On both servers, run:
+
   Log into MySQL:
 
 ```bash
@@ -183,7 +184,70 @@ FLUSH PRIVILEGES;
 EXIT;
 ```
 
-  6) Test the MySQL connection from Web Server 1 and Web Server 2:
+  6) Enable Binary Logging
+**Update /etc/mysql/mysql.conf.d/mysqld.cnf:**
+  - On Server 1:
+```ini
+server-id = 1
+log_bin = /var/log/mysql/mysql-bin.log
+binlog_format = row
+binlog_do_db = cscart_db
+```
+
+  - On Server 2:
+```ini
+server-id = 2
+log_bin = /var/log/mysql/mysql-bin.log
+binlog_format = row
+binlog_do_db = cscart_db
+```
+
+  - Restart MySQL:
+```bash
+sudo systemctl restart mysql
+```
+
+  7) Create Replication User
+  - On both servers:
+```sql
+CREATE USER 'replication_user'@'%' IDENTIFIED BY 'replication_password';
+GRANT REPLICATION SLAVE ON *.* TO 'replication_user'@'%';
+FLUSH PRIVILEGES;
+```
+
+  8) Set Up Master-Master Replication
+  - On Server 1:
+```sql
+CHANGE MASTER TO
+MASTER_HOST = '3.91.191.237',  # Server 2 IP
+MASTER_USER = 'replication_user',
+MASTER_PASSWORD = 'replication_password',
+MASTER_LOG_FILE = 'mysql-bin.000001',
+MASTER_LOG_POS = 4;
+START SLAVE;
+```
+  - On Server 2:
+```sql
+CHANGE MASTER TO
+MASTER_HOST = '54.90.194.35',  # Server 1 IP
+MASTER_USER = 'replication_user',
+MASTER_PASSWORD = 'replication_password',
+MASTER_LOG_FILE = 'mysql-bin.000001',
+MASTER_LOG_POS = 4;
+START SLAVE;
+```
+
+  9) Verify Replication
+  - On both servers, check the status:
+```sql
+SHOW SLAVE STATUS\G
+```
+
+Ensure Slave_IO_Running and Slave_SQL_Running are Yes.
+
+
+
+  10) Test the MySQL connection from Web Server 1 and Web Server 2:(OPTIONAL)
 
 ```bash
 mysql -u cscart_user -p -h <mysql_server_ip> cscart_db
@@ -232,7 +296,7 @@ After creating the load balancer, access the DNS name of the Load Balancer provi
 On either  **webserver 1** and **webserver 2**, open a browser and navigate to the public IP of the Load Balancer (e.g., http://cscart-lb-123456.elb.amazonaws.com).
 
 During the installation process, provide the following database details:
-  - Database Host: 172.31.16.42 (MySQL server's private IP)
+  - Database Host: 172.31.16.42 (any MySQL server's private IP)
   - Database Name: cscart_db
   - Database Username: cscart_user
   - Database Password: chirag
@@ -243,16 +307,17 @@ Complete the installation by following the on-screen instructions.
 ## Step 6: Test the Setup
 
 - CS-Cart Website: Verify that the CS-Cart website is accessible through the Load Balancer and that traffic is being distributed between **webserver 1** and **webserver 2**.
-- Database Connection: Ensure that the web servers can connect to the MySQL database on the mysqlcs instance.
+- Database Connection: Insert test data into cscart_db on one MySQL server and verify replication on the other.
 -  NFS Mount: Ensure that the NFS share is properly mounted on both **webserver 1** and **webserver 2**.
 - Load Balancer: Verify that the Load Balancer is distributing traffic correctly between the two web servers.
 
 
 ## Additional Notes
 - Backup: Regularly back up the MySQL database and CS-Cart files to avoid data loss.
+- Monitoring: Regularly monitor replication and NFS performance.
 - Security: Ensure that your MySQL, NFS, and Load Balancer configurations are properly secured, and use firewall rules to restrict access.
 - Scalability: You can add more web servers to the Load Balancer by registering them as additional targets.
 
 ## Conclusion
 
-This setup ensures high availability, scalability, and fault tolerance for CS-Cart with shared storage and MySQL replication. Apache-based load balancing ensures that traffic is distributed between web servers efficiently.
+By following this guide, you have set up a scalable and high-availability infrastructure for CS-Cart using load balancing to distribute traffic, NFS for shared storage, and Master-Master MySQL replication for fault-tolerant, synchronized databases. This configuration ensures scalability to handle growing traffic, redundancy to minimize downtime, and centralized storage for seamless file access. To enhance the setup further, consider enabling SSL for secure connections, implementing monitoring tools like Datadog or AWS CloudWatch for real-time insights, and optimizing database performance with caching solutions like Redis. This setup ensures your CS-Cart platform is resilient, efficient, and ready for high traffic demands.
