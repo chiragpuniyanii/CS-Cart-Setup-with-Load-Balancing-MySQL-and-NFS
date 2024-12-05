@@ -112,10 +112,11 @@ sudo nano /etc/fstab
 cd /var/www/html/cscart
 ```
 **In cmd or powershell**
+```bash
 scp -i "C:\Users\AS\Downloads\secret_key.pem" "C:\Users\AS\Downloads\multivendor_v4.18.2.SP1.zip" ubuntu@13.229.81.83:/home/ubuntu/
 ```
 
-```
+```bash
 sudo unzip multivender_v4.18.2.SP1.zip
 ```
 
