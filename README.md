@@ -32,7 +32,6 @@ sudo apt install nfs-kernel-server
 
 ```bash
 sudo mkdir -p /var/www/cscart
-sudo chown nobody:nogroup /var/www/cscart
 sudo chmod 777 /var/www/cscart
 ```
 
