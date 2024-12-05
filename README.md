@@ -65,8 +65,9 @@ sudo apt update
 sudo apt install apache2 -y
 sudo apt install nfs-common
 sudo add-apt-repository ppa:ondrej/php -y
-sudo apt install php8.2 libapache2-mod-php8.2 php8.2-mysql php8.2-curl php8.2-zip php8.2-gd php8.2-mbstring php8.2-xml php8.2-cli php8.2-intl unzip -y
+sudo apt install php8.2 libapache2-mod-php8.2 php8.2-mysql php8.2-curl php8.2-zip php8.2-gd php8.2-mbstring php8.2-xml php8.2-cli php8.2-intl php8.2-soap unzip -y
 sudo systemctl restart apache2
+
 ```
 
   2) Configure Apache2 to Serve CS-Cart
@@ -109,8 +110,12 @@ sudo nano /etc/fstab
 
 ```bash
 cd /var/www/html/cscart
-sudo apt install unzip
+```
+**In cmd or powershell**
 scp -i "C:\Users\AS\Downloads\secret_key.pem" "C:\Users\AS\Downloads\multivendor_v4.18.2.SP1.zip" ubuntu@13.229.81.83:/home/ubuntu/
+```
+
+```
 sudo unzip multivender_v4.18.2.SP1.zip
 ```
 
@@ -178,7 +183,7 @@ sudo mysql -u root -p
 
 ```sql
 CREATE DATABASE cscart_db;
-CREATE USER 'cscart_user'@'%' IDENTIFIED BY 'password';
+CREATE USER 'cscart_user'@'%' IDENTIFIED BY 'chirag';
 GRANT ALL PRIVILEGES ON cscart_db.* TO 'cscart_user'@'%';
 FLUSH PRIVILEGES;
 EXIT;
