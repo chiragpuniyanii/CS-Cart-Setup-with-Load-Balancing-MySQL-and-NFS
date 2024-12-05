@@ -218,7 +218,9 @@ sudo systemctl restart mysql
 ```sql
 CREATE USER 'replication_user'@'%' IDENTIFIED BY 'replication_password';
 GRANT REPLICATION SLAVE ON *.* TO 'replication_user'@'%';
+ALTER USER 'replication_user'@'%' IDENTIFIED WITH 'mysql_native_password' BY 'replication_password';
 FLUSH PRIVILEGES;
+
 ```
 
   8) Set Up Master-Master Replication
@@ -251,8 +253,16 @@ SHOW SLAVE STATUS\G
 
 Ensure Slave_IO_Running and Slave_SQL_Running are Yes.
 
+if not then paste this
+```bash
+SET GLOBAL sql_slave_skip_counter = 10;  -- Skip 10 events, adjust as necessary
+START SLAVE SQL_THREAD;
 
+```
+```bash
+SHOW SLAVE STATUS\G
 
+```
   10) Test the MySQL connection from Web Server 1 and Web Server 2:(OPTIONAL)
 
 ```bash
