@@ -121,10 +121,10 @@ sudo unzip multivender_v4.18.2.SP1.zip
 
   6) Set Permissions for CS-Cart
 ```bash
-sudo chmod 666 /var/www/html/config.local.php
-sudo chmod -R 777 /var/www/html/images
-sudo chmod -R 777 /var/www/html/design
-sudo chmod -R 777 /var/www/html/var
+sudo chmod 666 /var/www/html/cscart/config.local.php
+sudo chmod -R 777 /var/www/html/cscart/images
+sudo chmod -R 777 /var/www/html/cscart/design
+sudo chmod -R 777 /var/www/html/cscart/var
 ```
   7) Restart Apache
 ```bash
